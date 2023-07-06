@@ -8,7 +8,7 @@ import numpy as np
 sample_time = 1/40                #seconds
 duration = 30;                      #seconds
 
-amp = 5
+amp = 2
 frq = 1
 
 x0 = 0

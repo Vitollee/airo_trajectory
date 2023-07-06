@@ -26,51 +26,11 @@ int main(int argc, char **argv)
     int row_to_read;
 
     State state = TAKEOFF;
-    std::vector<geometry_msgs::Point> target_points;
-    geometry_msgs::Twist target_twist;
-    geometry_msgs::Accel target_accel;
-    std::vector<double> target_yaw;
-
-    target_points.resize(2);
-    target_yaw.resize(2);
-
-    target_points[0].x = 0;
-    target_points[0].y = -2.5;
-    target_points[0].z = 2.5;
-    target_yaw[0] = M_PI/4;
-
-    target_points[1].x = -1.5;
-    target_points[1].y = 2.5;
-    target_points[1].z = 1.0;
-    target_yaw[1] = -M_PI/4;
-
-    target_twist.linear.x = 0.5;
-    target_twist.linear.y = 0.5;
-    target_twist.linear.z = 0.5;
 
     while(ros::ok()){
         switch(state){
             case TAKEOFF:{
                 if(airo_trajectory_server.takeoff()){
-                    state = TRAJ_FILE_INIT;
-                }
-                break;
-            }
-
-            case POSE_YAW:{
-                airo_trajectory_server.pose_cmd(target_points[i],target_yaw[i]);
-                if(airo_trajectory_server.target_reached(target_points[i])){
-                    i += 1;
-                    if(i == target_yaw.size()){
-                        state = POSE_TWIST;
-                    }
-                }
-                break;
-            }
-
-            case POSE_TWIST:{
-                airo_trajectory_server.pose_cmd(target_points[0],target_twist);
-                if(airo_trajectory_server.target_reached(target_points[0])){
                     state = TRAJ_FILE_INIT;
                 }
                 break;
