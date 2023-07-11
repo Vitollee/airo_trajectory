@@ -1,14 +1,14 @@
 #include "airo_trajectory/airo_trajectory_server.h"
 
 AIRO_TRAJECTORY_SERVER::AIRO_TRAJECTORY_SERVER(ros::NodeHandle& nh){
-    nh.getParam("airo_control_node/pose_topic",POSE_TOPIC);
-    nh.getParam("airo_control_node/twist_topic",TWIST_TOPIC);
-    local_pose_sub = nh.subscribe<geometry_msgs::PoseStamped>(POSE_TOPIC,100,&AIRO_TRAJECTORY_SERVER::pose_cb,this);
-    local_twist_sub = nh.subscribe<geometry_msgs::TwistStamped>(TWIST_TOPIC,100,&AIRO_TRAJECTORY_SERVER::twist_cb,this);
-    fsm_info_sub = nh.subscribe<airo_message::FSMInfo>("/airo_control/fsm_info",10,&AIRO_TRAJECTORY_SERVER::fsm_info_cb,this);
-    command_pub = nh.advertise<airo_message::Reference>("/airo_control/setpoint",10);
-    command_preview_pub = nh.advertise<airo_message::ReferencePreview>("/airo_control/setpoint_preview",10);
-    takeoff_land_pub = nh.advertise<airo_message::TakeoffLandTrigger>("/airo_control/takeoff_land_trigger",10);
+    nh.getParam("airo_control_node/fsm/pose_topic",POSE_TOPIC);
+    nh.getParam("airo_control_node/fsm/twist_topic",TWIST_TOPIC);
+    local_pose_sub = nh.subscribe<geometry_msgs::PoseStamped>(POSE_TOPIC,5,&AIRO_TRAJECTORY_SERVER::pose_cb,this);
+    local_twist_sub = nh.subscribe<geometry_msgs::TwistStamped>(TWIST_TOPIC,5,&AIRO_TRAJECTORY_SERVER::twist_cb,this);
+    fsm_info_sub = nh.subscribe<airo_message::FSMInfo>("/airo_control/fsm_info",1,&AIRO_TRAJECTORY_SERVER::fsm_info_cb,this);
+    command_pub = nh.advertise<airo_message::Reference>("/airo_control/setpoint",1);
+    command_preview_pub = nh.advertise<airo_message::ReferencePreview>("/airo_control/setpoint_preview",1);
+    takeoff_land_pub = nh.advertise<airo_message::TakeoffLandTrigger>("/airo_control/takeoff_land_trigger",1);
 }
 
 void AIRO_TRAJECTORY_SERVER::pose_cb(const geometry_msgs::PoseStamped::ConstPtr& msg){
@@ -125,7 +125,7 @@ bool AIRO_TRAJECTORY_SERVER::file_cmd(const std::vector<std::vector<double>>& tr
     std::vector<std::vector<double>> reference;
 
     if (start_row >= total_rows - 1) {
-        // Construct 41 rows using the last row of traj
+        // Construct all rows using the last row of traj
         std::vector<double> last_row = traj.back();
         reference.assign(preview_size, last_row);
         path_ended = true;
