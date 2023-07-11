@@ -24,7 +24,7 @@ class AIRO_TRAJECTORY_SERVER{
     geometry_msgs::PoseStamped local_pose;
     double current_twist;
     std::string POSE_TOPIC, TWIST_TOPIC;
-    const int preview_size = 41;
+    const int preview_size = 21; // Only for MPC
 
     public:
 

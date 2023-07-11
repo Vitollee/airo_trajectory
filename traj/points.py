@@ -5,7 +5,7 @@
 import numpy as np
 import numpy.matlib
 # Parameters
-sample_time = 1/40              #seconds
+sample_time = 1/20              #seconds
 cycles = 5
 step_interval = 5
 

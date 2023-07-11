@@ -5,10 +5,10 @@
 import numpy as np
 
 # Parameters
-sample_time = 1/40             # seconds
+sample_time = 1/20             # seconds
 duration = 30                  # seconds
 
-r = 5                        # m
+r = 5                          # m
 v = 3                          # m/s
 
 # Circle Center

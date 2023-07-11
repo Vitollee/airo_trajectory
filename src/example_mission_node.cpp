@@ -15,7 +15,7 @@ int main(int argc, char **argv)
 {
     ros::init(argc, argv, "example_mission_node");
     ros::NodeHandle nh;
-    ros::Rate rate(40.0);
+    ros::Rate rate(20.0);
     AIRO_TRAJECTORY_SERVER airo_trajectory_server(nh);
 
     std::string TRAJ_FILE_NAME,TRAJ_FILE_PATH;
@@ -86,7 +86,7 @@ int main(int argc, char **argv)
             }
 
             case TRAJ_FILE:{
-                if(airo_trajectory_server.file_cmd(trajectory_data, row_to_read) &&
+                if(airo_trajectory_server.file_cmd(trajectory_data, row_to_read) && // Reached end of file
                 airo_trajectory_server.target_reached(airo_trajectory_server.get_end_point(trajectory_data))){
                     state = LAND;
                 }

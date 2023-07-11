@@ -5,7 +5,7 @@
 import numpy as np
 
 # Parameters
-sample_time = 1/40                #seconds
+sample_time = 1/20                #seconds
 duration = 30;                      #seconds
 
 amp = 5
