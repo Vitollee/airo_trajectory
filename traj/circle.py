@@ -12,9 +12,9 @@ r = 2                        # m
 v = 2                          # m/s
 
 # Circle Center
-x0 = 0.5                
-y0 = 0.5
-z0 = 1
+x0 = 0.2                
+y0 = 0.3
+z0 = 1.0
 
 # Trajectory
 traj = np.zeros((int(duration/sample_time+1),7)) #x y z u v w psi
