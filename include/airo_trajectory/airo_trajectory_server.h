@@ -23,8 +23,10 @@ class AIRO_TRAJECTORY_SERVER{
     airo_message::FSMInfo fsm_info;
     geometry_msgs::PoseStamped local_pose;
     double current_twist;
-    std::string POSE_TOPIC, TWIST_TOPIC;
-    const int preview_size = 21; // Only for MPC
+    std::string POSE_TOPIC, TWIST_TOPIC, CONTROLLER_TYPE;
+    // Only for MPC
+    bool mpc_enable_preview = false, use_preview = false;
+    const int preview_size = 21;
 
     public:
 
@@ -43,9 +45,13 @@ class AIRO_TRAJECTORY_SERVER{
     geometry_msgs::Point get_end_point(const std::vector<std::vector<double>>&);
     bool file_cmd(const std::vector<std::vector<double>>& traj, int&);
     void assign_position(const std::vector<std::vector<double>>&, airo_message::ReferencePreview&);
+    void assign_position(const std::vector<double>&, airo_message::Reference&);
     void assign_twist(const std::vector<std::vector<double>>&, airo_message::ReferencePreview&);
+    void assign_twist(const std::vector<double>&, airo_message::Reference&);
     void assign_accel(const std::vector<std::vector<double>>&, airo_message::ReferencePreview&);
+    void assign_accel(const std::vector<double>&, airo_message::Reference&);
     void assign_yaw(const std::vector<std::vector<double>>&, airo_message::ReferencePreview&);
+    void assign_yaw(const std::vector<double>&, airo_message::Reference&);
     bool takeoff();
     bool land();
 };
