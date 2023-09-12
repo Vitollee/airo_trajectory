@@ -2,7 +2,6 @@
 
 import numpy as np
 import rospy,rospkg
-import os
 
 rospy.init_node('generate_traj_node',anonymous=True)
 frequency = rospy.get_param('/airo_control_node/fsm/fsm_frequency')
@@ -13,15 +12,15 @@ output_path = package_path + '/scripts/circle.txt'
 
 # Parameters
 sample_time = 1/frequency      # seconds
-duration = 5                  # seconds
+duration = 30                  # seconds
 
-r = 5                          # m
-v = 3                          # m/s
+r = 2.0                        # m
+v = 2.0                        # m/s
 
 # Circle Center
-x0 = 0.5                
-y0 = 0.5
-z0 = 1
+x0 = 0.2                
+y0 = 0.3
+z0 = 1.0
 
 # Trajectory
 traj = np.zeros((int(duration/sample_time+1),10)) #x y z u v w du dv dw psi

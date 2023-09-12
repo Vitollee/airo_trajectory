@@ -19,6 +19,27 @@ int main(int argc, char **argv)
     AIRO_TRAJECTORY_SERVER airo_trajectory_server(nh);
 
     State state = TAKEOFF;
+    std::vector<geometry_msgs::Point> target_points;
+    geometry_msgs::Twist target_twist;
+    geometry_msgs::Accel target_accel;
+    std::vector<double> target_yaw;
+
+    target_points.resize(2);
+    target_yaw.resize(2);
+
+    target_points[0].x = 0.0;
+    target_points[0].y = 0.0;
+    target_points[0].z = 1.0;
+    target_yaw[0] = M_PI/4;
+
+    target_points[1].x = 1.5;
+    target_points[1].y = 1.5;
+    target_points[1].z = 1.5;
+    target_yaw[1] = -M_PI/4;
+
+    target_twist.linear.x = 0.5;
+    target_twist.linear.y = 0.5;
+    target_twist.linear.z = 0.5;
 
     while(ros::ok()){
         switch(state){
