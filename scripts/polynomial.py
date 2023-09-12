@@ -1,9 +1,14 @@
-
-#--------------------------------------
-#Generate reference trajectory for NMPC
-#--------------------------------------
+#!/usr/bin/env python3
 
 import numpy as np
+import rospy,rospkg
+
+rospy.init_node('generate_traj_node',anonymous=True)
+frequency = rospy.get_param('/airo_control_node/fsm/fsm_frequency')
+
+rospack = rospkg.RosPack()
+package_path = rospack.get_path('airo_trajectory')
+output_path = package_path + '/scripts/polynomial.txt'
 
 def get_polynomial(poly_coeff: np.ndarray, t: np.ndarray, axis):
     poly = np.zeros((t.size))
@@ -23,7 +28,7 @@ def generate_trajectory(poly_coeff: np.ndarray, duration, sample_time):
     return traj
 
 # Parameters
-sample_time = 1/20                  #seconds
+sample_time = 1/frequency      # seconds
 
 poly_coeff_1 = np.zeros((3,6))
 poly_coeff_1[0] = [0,  4.68084e-15, -1.82008e-16,     0.172267,    -0.026382,   0.00107469]
