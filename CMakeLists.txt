@@ -52,3 +52,10 @@ add_executable(example_mission_node
 target_link_libraries(example_mission_node
   ${catkin_LIBRARIES}
 )
+
+add_executable(file_trajectory_node
+    src/file_trajectory_node.cpp
+    src/airo_trajectory_server.cpp)
+target_link_libraries(file_trajectory_node
+  ${catkin_LIBRARIES}
+)

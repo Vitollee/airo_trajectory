@@ -1,12 +1,19 @@
-#--------------------------------------
-#Generate reference trajectory for NMPC
-#--------------------------------------
+#!/usr/bin/env python3
 
 import numpy as np
+import rospy,rospkg
+import os
+
+rospy.init_node('generate_traj_node',anonymous=True)
+frequency = rospy.get_param('/airo_control_node/fsm/fsm_frequency')
+
+rospack = rospkg.RosPack()
+package_path = rospack.get_path('airo_trajectory')
+output_path = package_path + '/scripts/circle.txt'
 
 # Parameters
-sample_time = 1/20             # seconds
-duration = 30                  # seconds
+sample_time = 1/frequency      # seconds
+duration = 5                  # seconds
 
 r = 5                          # m
 v = 3                          # m/s
@@ -33,4 +40,6 @@ traj[:,8] = 0
 traj[:,9] = np.arctan2(np.sin(t*v/r),np.cos(t*v/r))
 
 # write to txt
-np.savetxt('circle.txt',traj,fmt='%f')
+np.savetxt(output_path,traj,fmt='%f')
+
+print("circle.txt updated!")
