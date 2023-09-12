@@ -8,7 +8,7 @@ frequency = rospy.get_param('/airo_control_node/fsm/fsm_frequency')
 
 rospack = rospkg.RosPack()
 package_path = rospack.get_path('airo_trajectory')
-output_path = package_path + '/scripts/circle.txt'
+output_path = package_path + '/scripts/points.txt'
 
 # Parameters
 sample_time = 1/frequency      # seconds
