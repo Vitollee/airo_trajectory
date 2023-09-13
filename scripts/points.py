@@ -15,7 +15,7 @@ sample_time = 1/frequency      # seconds
 cycles = 1
 step_interval = 5
 
-points_matrix = np.array([[-1.5,-1.5,1.0],[1.5,-1.5,1.0],[1.5,1.5,1.0],[-1.5,1.5,1.0]])
+points_matrix = np.array([[0.0,0.0,0.75],[0.0,0.0,1.5]])
 
 # Trajectory
 duration = cycles*np.size(points_matrix,0)*step_interval
@@ -33,4 +33,6 @@ for i in range(1,cycles+1):
 traj[-1,0:3] = traj[-2,0:3]
 
 # Write to txt
-np.savetxt('points.txt',traj,fmt='%f')
+np.savetxt(output_path,traj,fmt='%f')
+
+print("points.txt updated!")
