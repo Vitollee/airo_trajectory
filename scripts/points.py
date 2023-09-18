@@ -13,9 +13,9 @@ output_path = package_path + '/scripts/points.txt'
 # Parameters
 sample_time = 1/frequency      # seconds
 cycles = 1
-step_interval = 5
+step_interval = 7.5
 
-points_matrix = np.array([[0.0,0.0,0.75],[0.0,0.0,1.5]])
+points_matrix = np.array([[-1,-1,0.75],[1,-1,0.75],[-1,-1,0.75],[-1,1,0.75],[-1,-1,0.75],[-1,-1,2.75],[-1,-1,0.75]])
 
 # Trajectory
 duration = cycles*np.size(points_matrix,0)*step_interval

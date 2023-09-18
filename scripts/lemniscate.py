@@ -34,6 +34,6 @@ traj[:,4] = amp*frq*np.cos(t*2*frq)
 traj[:,5] = 0
 
 # Write to txt
-np.savetxt('output_path.txt',traj,fmt='%f')
+np.savetxt(output_path,traj,fmt='%f')
 
 print("output_path.txt updated!")
