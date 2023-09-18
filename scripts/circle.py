@@ -40,5 +40,4 @@ traj[:,9] = np.arctan2(np.sin(t*v/r),np.cos(t*v/r))
 
 # write to txt
 np.savetxt(output_path,traj,fmt='%f')
-
 print("circle.txt updated!")

@@ -53,4 +53,5 @@ traj_3 = generate_trajectory(poly_coeff_3, poly_time[2], sample_time)
 traj = np.concatenate((traj_1, traj_2, traj_3), axis=0)
 
 # # Write to txt
-np.savetxt('polynomial.txt',traj,fmt='%f')
+np.savetxt(output_path,traj,fmt='%f')
+print("polynomial.txt updated!")
