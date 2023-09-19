@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <launch>
 
-    <!-- <arg name="traj_name" default="circle"/> -->
+    <arg name="traj_name" default="circle"/>
     <!-- <arg name="traj_name" default="lemniscate"/> -->
-    <arg name="traj_name" default="points"/>
+    <!-- <arg name="traj_name" default="points"/> -->
 
 	<node pkg="airo_trajectory" type="file_trajectory_node" name="file_trajectory_node" output="screen">
         <param name="/traj_name" value="$(arg traj_name)"/>

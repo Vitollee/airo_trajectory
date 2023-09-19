@@ -16,8 +16,8 @@ duration = 40                  # seconds
 
 r = 1.5                        # m
 # v = 1.5                        # m/s
-v = np.arange(1.5,3.0,(3.0-1.5)*sample_time/duration)
-v = np.append(v,3.0)
+v = np.arange(1.5,2.5,(2.5-1.5)*sample_time/duration)
+v = np.append(v,2.5)
 
 # Circle Center
 x0 = 0.2                
