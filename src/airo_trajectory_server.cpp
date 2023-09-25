@@ -54,6 +54,28 @@ void AIRO_TRAJECTORY_SERVER::pose_cmd(const geometry_msgs::Point& point, const d
     }
 }
 
+void AIRO_TRAJECTORY_SERVER::pose_cmd(const geometry_msgs::Pose& pose){
+    double yaw_angle = 0.0;
+    if (is_pose_initialized(pose)){
+        yaw_angle = q2yaw(pose.orientation);
+    }
+    pose_cmd(pose.position,yaw_angle);
+}
+void AIRO_TRAJECTORY_SERVER::pose_cmd(const geometry_msgs::Pose& pose, const geometry_msgs::Twist& twist){
+    double yaw_angle = 0.0;
+    if (is_pose_initialized(pose)){
+        yaw_angle = q2yaw(pose.orientation);
+    }
+    pose_cmd(pose.position,twist,yaw_angle);
+}
+void AIRO_TRAJECTORY_SERVER::pose_cmd(const geometry_msgs::Pose& pose, const geometry_msgs::Twist& twist, const geometry_msgs::Accel& accel){
+        double yaw_angle = 0.0;
+    if (is_pose_initialized(pose)){
+        yaw_angle = q2yaw(pose.orientation);
+    }
+    pose_cmd(pose.position,twist,accel,yaw_angle);
+}
+
 void AIRO_TRAJECTORY_SERVER::pose_cmd(const geometry_msgs::Point& point, const geometry_msgs::Twist& twist, const double& yaw_angle){
     if(fsm_info.is_waiting_for_command){
         geometry_msgs::Accel accel;
@@ -78,11 +100,36 @@ void AIRO_TRAJECTORY_SERVER::pose_cmd(const geometry_msgs::Point& point, const g
     }
 }
 
-bool AIRO_TRAJECTORY_SERVER::target_reached(const geometry_msgs::Point& msg){
-    bool position_reached = sqrt(pow(msg.x - local_pose.pose.position.x,2)+pow(msg.y - local_pose.pose.position.y,2)
-    +pow(msg.z - local_pose.pose.position.z,2)) < 0.5;
+int AIRO_TRAJECTORY_SERVER::is_pose_initialized(const geometry_msgs::Pose& pose){
+    if (pose.orientation.w == 0 && pose.orientation.x == 0 && pose.orientation.y == 0 &&pose.orientation.z == 0){
+        return 0; 
+    }
+    else{
+        return 1;
+    }
+}
+
+bool AIRO_TRAJECTORY_SERVER::target_reached(const geometry_msgs::Pose& pose){
+    bool position_reached = sqrt(pow(pose.position.x - local_pose.pose.position.x,2)+pow(pose.position.y - local_pose.pose.position.y,2)
+    +pow(pose.position.z - local_pose.pose.position.z,2)) < 0.5;
+    bool twist_reached = current_twist_norm < 0.5;
+    bool yaw_reached = abs(q2yaw(pose.orientation) - q2yaw(local_pose.pose.orientation)) < 5 * M_PI / 180;
+    return position_reached && twist_reached && yaw_reached;
+}
+
+bool AIRO_TRAJECTORY_SERVER::target_reached(const geometry_msgs::Point& point){
+    bool position_reached = sqrt(pow(point.x - local_pose.pose.position.x,2)+pow(point.y - local_pose.pose.position.y,2)
+    +pow(point.z - local_pose.pose.position.z,2)) < 0.5;
     bool twist_reached = current_twist_norm < 0.5;
     return position_reached && twist_reached;
+}
+
+bool AIRO_TRAJECTORY_SERVER::target_reached(const geometry_msgs::Point& point, const double& yaw_angle){
+    bool position_reached = sqrt(pow(point.x - local_pose.pose.position.x,2)+pow(point.y - local_pose.pose.position.y,2)
+    +pow(point.z - local_pose.pose.position.z,2)) < 0.5;
+    bool twist_reached = current_twist_norm < 0.5;
+    bool yaw_reached = abs(yaw_angle - q2yaw(local_pose.pose.orientation)) < 5 * M_PI / 180;
+    return position_reached && twist_reached && yaw_reached;
 }
 
 geometry_msgs::Quaternion AIRO_TRAJECTORY_SERVER::yaw2q(double yaw){
@@ -139,19 +186,35 @@ void AIRO_TRAJECTORY_SERVER::file_traj_init(const std::string& file_name, std::v
     }
 }
 
-geometry_msgs::Point AIRO_TRAJECTORY_SERVER::get_start_point(const std::vector<std::vector<double>>& traj){
-    geometry_msgs::Point start_point;
-    start_point.x = traj[0][0];
-    start_point.y = traj[0][1];
-    start_point.z = traj[0][2];
+geometry_msgs::Pose AIRO_TRAJECTORY_SERVER::get_start_pose(const std::vector<std::vector<double>>& traj){
+    geometry_msgs::Pose start_point;
+    double start_yaw;
+    if (traj[0].size() != 3){
+        start_yaw = traj[0][traj[0].size()-1];
+    }
+    else{
+        start_yaw = 0.0;
+    }
+    start_point.position.x = traj[0][0];
+    start_point.position.y = traj[0][1];
+    start_point.position.z = traj[0][2];
+    start_point.orientation = yaw2q(start_yaw);
     return start_point;
 }
 
-geometry_msgs::Point AIRO_TRAJECTORY_SERVER::get_end_point(const std::vector<std::vector<double>>& traj){
-    geometry_msgs::Point end_point;
-    end_point.x = traj[traj.size()-1][0];
-    end_point.y = traj[traj.size()-1][1];
-    end_point.z = traj[traj.size()-1][2];
+geometry_msgs::Pose AIRO_TRAJECTORY_SERVER::get_end_pose(const std::vector<std::vector<double>>& traj){
+    geometry_msgs::Pose end_point;
+    double end_yaw;
+    if (traj[0].size() != 3){
+        end_yaw = traj[traj.size()-1][traj[traj.size()-1].size()-1];
+    }
+    else{
+        end_yaw = 0.0;
+    }
+    end_point.position.x = traj[traj.size()-1][0];
+    end_point.position.y = traj[traj.size()-1][1];
+    end_point.position.z = traj[traj.size()-1][2];
+    end_point.orientation = yaw2q(end_yaw);
     return end_point;
 }
 
