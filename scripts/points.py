@@ -15,7 +15,7 @@ sample_time = 1/frequency      # seconds
 cycles = 2
 step_interval = 5
 
-points_matrix = np.array([[0.0,0.0,1.0,0.0],[2.0,0.0,1.0,1.00]])
+points_matrix = np.array([[0.0,0.0,1.0,-2.4],[2.0,0.0,1.0,2.4]])
 
 # Trajectory
 duration = cycles*np.size(points_matrix,0)*step_interval

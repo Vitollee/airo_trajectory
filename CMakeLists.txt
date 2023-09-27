@@ -17,27 +17,15 @@ find_package(catkin REQUIRED COMPONENTS
   message_runtime
   tf
   airo_control
+  airo_message
 )
 
 find_package(Eigen3 REQUIRED)
 
-# set(acados_include $ENV{HOME}/acados/include)
-# set(acados_lib $ENV{HOME}/acados/lib)
-# set(quadrotor_model ${PROJECT_SOURCE_DIR}/scripts/c_generated_code)
-
-# add_message_files(
-#   FILES
-#   TakeoffLandTrigger.msg
-#   FSMInfo.msg
-#   Reference.msg
-# )
-
-# generate_messages(DEPENDENCIES std_msgs geometry_msgs)
-
 catkin_package(
  INCLUDE_DIRS include
 #  LIBRARIES airo_trajectory
- CATKIN_DEPENDS roscpp message_runtime airo_control
+ CATKIN_DEPENDS roscpp message_runtime airo_control airo_message
 #  DEPENDS system_lib
 )
 
@@ -52,10 +40,18 @@ add_executable(example_mission_node
 target_link_libraries(example_mission_node
   ${catkin_LIBRARIES}
 )
+add_dependencies(example_mission_node airo_message_generate_messages_cpp)
 
 add_executable(file_trajectory_node
     src/file_trajectory_node.cpp
     src/airo_trajectory_server.cpp)
 target_link_libraries(file_trajectory_node
+  ${catkin_LIBRARIES}
+)
+add_dependencies(file_trajectory_node airo_message_generate_messages_cpp)
+
+add_executable(position_setpoint_node
+    src/position_setpoint_node.cpp)
+target_link_libraries(position_setpoint_node
   ${catkin_LIBRARIES}
 )

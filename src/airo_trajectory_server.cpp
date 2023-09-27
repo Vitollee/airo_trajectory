@@ -10,6 +10,7 @@ AIRO_TRAJECTORY_SERVER::AIRO_TRAJECTORY_SERVER(ros::NodeHandle& nh){
     local_twist_sub = nh.subscribe<geometry_msgs::TwistStamped>(TWIST_TOPIC,5,&AIRO_TRAJECTORY_SERVER::twist_cb,this);
     fsm_info_sub = nh.subscribe<airo_message::FSMInfo>("/airo_control/fsm_info",1,&AIRO_TRAJECTORY_SERVER::fsm_info_cb,this);
     attitude_target_sub = nh.subscribe<mavros_msgs::AttitudeTarget>("/mavros/setpoint_raw/attitude",5,&AIRO_TRAJECTORY_SERVER::attitude_target_cb,this);
+    yaw_prediction_sub = nh.subscribe<std_msgs::Float64MultiArray>("/airo_control/mpc/yaw_prediction",5,&AIRO_TRAJECTORY_SERVER::yaw_prediction_cb,this);
     command_pub = nh.advertise<airo_message::Reference>("/airo_control/setpoint",1);
     command_preview_pub = nh.advertise<airo_message::ReferencePreview>("/airo_control/setpoint_preview",1);
     takeoff_land_pub = nh.advertise<airo_message::TakeoffLandTrigger>("/airo_control/takeoff_land_trigger",1);
@@ -19,6 +20,7 @@ AIRO_TRAJECTORY_SERVER::AIRO_TRAJECTORY_SERVER(ros::NodeHandle& nh){
             use_preview = true;
         }
     }
+    yaw_prediction.resize(21);
 }
 
 void AIRO_TRAJECTORY_SERVER::pose_cb(const geometry_msgs::PoseStamped::ConstPtr& msg){
@@ -42,6 +44,12 @@ void AIRO_TRAJECTORY_SERVER::attitude_target_cb(const mavros_msgs::AttitudeTarge
     attitude_target.header = msg->header;
     attitude_target.orientation = msg->orientation;
     attitude_target.thrust = msg->thrust;
+}
+
+void AIRO_TRAJECTORY_SERVER::yaw_prediction_cb(const std_msgs::Float64MultiArray::ConstPtr& msg){
+    for (size_t i = 0; i < yaw_prediction.size();i++){
+        yaw_prediction[i] = msg->data[i];
+    }
 }
 
 void AIRO_TRAJECTORY_SERVER::pose_cmd(const geometry_msgs::Point& point, const double& yaw_angle){
@@ -515,7 +523,9 @@ void AIRO_TRAJECTORY_SERVER::update_log(const airo_message::Reference& ref){
         line_to_push.push_back(target_euler.z()); // psi ref
         line_to_push.push_back(local_euler.z()); // psi
         line_to_push.push_back(attitude_target.thrust); // thrust
-
+        for (size_t i = 0; i < yaw_prediction.size();i++){
+            line_to_push.push_back(yaw_prediction[i]);
+        }
         log_data.push_back(line_to_push);
         log_counter = 1;
     }

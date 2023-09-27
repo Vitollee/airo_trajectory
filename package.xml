@@ -73,4 +73,8 @@
   <build_export_depend>airo_control</build_export_depend>
   <exec_depend>airo_control</exec_depend>
 
+  <build_depend>airo_message</build_depend>
+  <build_export_depend>airo_message</build_export_depend>
+  <exec_depend>airo_message</exec_depend>
+
 </package>
