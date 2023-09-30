@@ -15,6 +15,8 @@
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/State.h>
 #include <mavros_msgs/AttitudeTarget.h>
+#include <std_msgs/Float64.h>
+#include <std_msgs/Float64MultiArray.h>
 #include <airo_message/FSMInfo.h>
 #include <airo_message/TakeoffLandTrigger.h>
 #include <airo_message/Reference.h>
@@ -25,10 +27,10 @@ class AIRO_TRAJECTORY_SERVER{
 
     // Parameters
     std::string POSE_TOPIC, TWIST_TOPIC, CONTROLLER_TYPE;
-    bool RESULT_SAVE = false,RESULT_PLOT = false;
+    bool RESULT_SAVE = false,RESULT_PLOT = false, PUB_DEBUG = false;
     int FSM_FREQUENCY;
 
-    ros::Subscriber local_pose_sub, local_twist_sub, fsm_info_sub, attitude_target_sub;
+    ros::Subscriber local_pose_sub, local_twist_sub, fsm_info_sub, attitude_target_sub, mpc_debug_sub, backstepping_debug_sub, slidingmode_debug_sub;
     ros::Publisher command_pub, command_preview_pub, takeoff_land_pub;
     airo_message::FSMInfo fsm_info;
     geometry_msgs::PoseStamped local_pose;
@@ -37,8 +39,9 @@ class AIRO_TRAJECTORY_SERVER{
     double current_twist_norm;
     std::vector<std::vector<double>> log_data; // t,ref_x,x,ref_y,y,ref_z,z,ref_u,u,ref_v,v,ref_w,w,ref_phi,phi,ref_theta,theta,ref_psi,psi,thrust
     int log_counter,log_interval = 5;
+    std::vector<double> debug_msg;
 
-    // Only for MPC
+    // For MPC
     bool mpc_enable_preview = false, use_preview = false;
     const int preview_size = 21;
     const int row_interval = 5; // trajectory file at 100hz, mpc prediction at 20hz, so publish traj every 5 rows
@@ -50,17 +53,26 @@ class AIRO_TRAJECTORY_SERVER{
     void twist_cb(const geometry_msgs::TwistStamped::ConstPtr&);
     void fsm_info_cb(const airo_message::FSMInfo::ConstPtr&);
     void attitude_target_cb(const mavros_msgs::AttitudeTarget::ConstPtr&);
+    void mpc_debug_cb(const std_msgs::Float64MultiArray::ConstPtr&);
+    void backstepping_debug_cb(const std_msgs::Float64MultiArray::ConstPtr&);
+    void slidingmode_debug_cb(const std_msgs::Float64MultiArray::ConstPtr&);
+    void pose_cmd(const geometry_msgs::Pose&);
+    void pose_cmd(const geometry_msgs::Pose&, const geometry_msgs::Twist&);
+    void pose_cmd(const geometry_msgs::Pose&, const geometry_msgs::Twist&, const geometry_msgs::Accel&);
     void pose_cmd(const geometry_msgs::Point&, const double& yaw_angle = 0.0);
     void pose_cmd(const geometry_msgs::Point&, const geometry_msgs::Twist&, const double& yaw_angle = 0.0);
     void pose_cmd(const geometry_msgs::Point&, const geometry_msgs::Twist&, const geometry_msgs::Accel&, const double& yaw_angle = 0.0);
+    int is_pose_initialized(const geometry_msgs::Pose&);
+    bool target_reached(const geometry_msgs::Pose&);
     bool target_reached(const geometry_msgs::Point&);
+    bool target_reached(const geometry_msgs::Point&, const double&);
     geometry_msgs::Quaternion yaw2q(double);
     double q2yaw(const geometry_msgs::Quaternion&);
     Eigen::Vector3d q2rpy(const geometry_msgs::Quaternion&);
     geometry_msgs::Quaternion rpy2q(const Eigen::Vector3d&);
     void file_traj_init(const std::string&, std::vector<std::vector<double>>&);
-    geometry_msgs::Point get_start_point(const std::vector<std::vector<double>>&);
-    geometry_msgs::Point get_end_point(const std::vector<std::vector<double>>&);
+    geometry_msgs::Pose get_start_pose(const std::vector<std::vector<double>>&);
+    geometry_msgs::Pose get_end_pose(const std::vector<std::vector<double>>&);
     bool file_cmd(const std::vector<std::vector<double>>& traj, int&);
     void assign_position(const std::vector<std::vector<double>>&, airo_message::ReferencePreview&);
     void assign_position(const std::vector<double>&, airo_message::Reference&);

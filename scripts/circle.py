@@ -42,5 +42,4 @@ traj[:,9] = 0.0
 
 # write to txt
 np.savetxt(output_path,traj,fmt='%f')
-
 print("circle.txt updated!")

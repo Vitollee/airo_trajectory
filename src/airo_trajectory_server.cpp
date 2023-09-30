@@ -5,7 +5,7 @@ AIRO_TRAJECTORY_SERVER::AIRO_TRAJECTORY_SERVER(ros::NodeHandle& nh){
     nh.getParam("airo_control_node/fsm/twist_topic",TWIST_TOPIC);
     nh.getParam("airo_control_node/fsm/controller_type",CONTROLLER_TYPE);
     nh.getParam("/file_trajectory_node/result_save",RESULT_SAVE);
-    nh.getParam("/airo_control_node/fsm/fsm_frequency",FSM_FREQUENCY);
+    nh.getParam("airo_control_node/fsm/fsm_frequency",FSM_FREQUENCY);
     local_pose_sub = nh.subscribe<geometry_msgs::PoseStamped>(POSE_TOPIC,5,&AIRO_TRAJECTORY_SERVER::pose_cb,this);
     local_twist_sub = nh.subscribe<geometry_msgs::TwistStamped>(TWIST_TOPIC,5,&AIRO_TRAJECTORY_SERVER::twist_cb,this);
     fsm_info_sub = nh.subscribe<airo_message::FSMInfo>("/airo_control/fsm_info",1,&AIRO_TRAJECTORY_SERVER::fsm_info_cb,this);
@@ -18,6 +18,28 @@ AIRO_TRAJECTORY_SERVER::AIRO_TRAJECTORY_SERVER(ros::NodeHandle& nh){
         if (mpc_enable_preview){
             use_preview = true;
         }
+        nh.getParam("airo_control_node/mpc/pub_debug",PUB_DEBUG);
+        if (PUB_DEBUG){
+            mpc_debug_sub = nh.subscribe<std_msgs::Float64MultiArray>("/airo_control/mpc/debug",1,&AIRO_TRAJECTORY_SERVER::mpc_debug_cb,this);
+            debug_msg.resize(preview_size+3);
+        }
+    }
+    else if (CONTROLLER_TYPE == "backstepping"){
+        nh.getParam("airo_control_node/backstepping/pub_debug",PUB_DEBUG);
+        if (PUB_DEBUG){
+            backstepping_debug_sub = nh.subscribe<std_msgs::Float64MultiArray>("/airo_control/backstepping/debug",1,&AIRO_TRAJECTORY_SERVER::backstepping_debug_cb,this);
+            debug_msg.resize(8);
+        }
+    }
+    else if (CONTROLLER_TYPE == "slidingmode"){
+        nh.getParam("airo_control_node/slidingmode/pub_debug",PUB_DEBUG);
+        if (PUB_DEBUG){
+            slidingmode_debug_sub = nh.subscribe<std_msgs::Float64MultiArray>("/airo_control/slidingmode/debug",1,&AIRO_TRAJECTORY_SERVER::slidingmode_debug_cb,this);
+            debug_msg.resize(11);
+        }
+    }
+    else{
+        ROS_ERROR("[AIRo Trajectory] Controller type not supported!");
     }
     else if (CONTROLLER_TYPE == "hmpc"){
         nh.getParam("airo_control_node/hmpc/enable_preview",mpc_enable_preview);
@@ -56,6 +78,29 @@ void AIRO_TRAJECTORY_SERVER::attitude_target_cb(const mavros_msgs::AttitudeTarge
     attitude_target.thrust = msg->thrust;
 }
 
+void AIRO_TRAJECTORY_SERVER::mpc_debug_cb(const std_msgs::Float64MultiArray::ConstPtr& msg){
+    if (CONTROLLER_TYPE == "mpc"){
+        for (size_t i = 0; i < debug_msg.size();i++){
+            debug_msg[i] = msg->data[i];
+        }
+    }
+}
+
+void AIRO_TRAJECTORY_SERVER::backstepping_debug_cb(const std_msgs::Float64MultiArray::ConstPtr& msg){
+    if (CONTROLLER_TYPE == "backstepping"){
+        for (size_t i = 0; i < debug_msg.size();i++){
+            debug_msg[i] = msg->data[i];
+        }
+    }
+}
+void AIRO_TRAJECTORY_SERVER::slidingmode_debug_cb(const std_msgs::Float64MultiArray::ConstPtr& msg){
+    if (CONTROLLER_TYPE == "slidingmode"){
+        for (size_t i = 0; i < debug_msg.size();i++){
+            debug_msg[i] = msg->data[i];
+        }
+    }
+}
+
 void AIRO_TRAJECTORY_SERVER::pose_cmd(const geometry_msgs::Point& point, const double& yaw_angle){
     if(fsm_info.is_waiting_for_command){
         geometry_msgs::Twist twist;
@@ -64,6 +109,28 @@ void AIRO_TRAJECTORY_SERVER::pose_cmd(const geometry_msgs::Point& point, const d
         twist.linear.z = 0.0;
         pose_cmd(point,twist,yaw_angle);
     }
+}
+
+void AIRO_TRAJECTORY_SERVER::pose_cmd(const geometry_msgs::Pose& pose){
+    double yaw_angle = 0.0;
+    if (is_pose_initialized(pose)){
+        yaw_angle = q2yaw(pose.orientation);
+    }
+    pose_cmd(pose.position,yaw_angle);
+}
+void AIRO_TRAJECTORY_SERVER::pose_cmd(const geometry_msgs::Pose& pose, const geometry_msgs::Twist& twist){
+    double yaw_angle = 0.0;
+    if (is_pose_initialized(pose)){
+        yaw_angle = q2yaw(pose.orientation);
+    }
+    pose_cmd(pose.position,twist,yaw_angle);
+}
+void AIRO_TRAJECTORY_SERVER::pose_cmd(const geometry_msgs::Pose& pose, const geometry_msgs::Twist& twist, const geometry_msgs::Accel& accel){
+        double yaw_angle = 0.0;
+    if (is_pose_initialized(pose)){
+        yaw_angle = q2yaw(pose.orientation);
+    }
+    pose_cmd(pose.position,twist,accel,yaw_angle);
 }
 
 void AIRO_TRAJECTORY_SERVER::pose_cmd(const geometry_msgs::Point& point, const geometry_msgs::Twist& twist, const double& yaw_angle){
@@ -90,11 +157,36 @@ void AIRO_TRAJECTORY_SERVER::pose_cmd(const geometry_msgs::Point& point, const g
     }
 }
 
-bool AIRO_TRAJECTORY_SERVER::target_reached(const geometry_msgs::Point& msg){
-    bool position_reached = sqrt(pow(msg.x - local_pose.pose.position.x,2)+pow(msg.y - local_pose.pose.position.y,2)
-    +pow(msg.z - local_pose.pose.position.z,2)) < 0.5;
+int AIRO_TRAJECTORY_SERVER::is_pose_initialized(const geometry_msgs::Pose& pose){
+    if (pose.orientation.w == 0 && pose.orientation.x == 0 && pose.orientation.y == 0 &&pose.orientation.z == 0){
+        return 0; 
+    }
+    else{
+        return 1;
+    }
+}
+
+bool AIRO_TRAJECTORY_SERVER::target_reached(const geometry_msgs::Pose& pose){
+    bool position_reached = sqrt(pow(pose.position.x - local_pose.pose.position.x,2)+pow(pose.position.y - local_pose.pose.position.y,2)
+    +pow(pose.position.z - local_pose.pose.position.z,2)) < 0.5;
+    bool twist_reached = current_twist_norm < 0.5;
+    bool yaw_reached = abs(q2yaw(pose.orientation) - q2yaw(local_pose.pose.orientation)) < 5 * M_PI / 180;
+    return position_reached && twist_reached && yaw_reached;
+}
+
+bool AIRO_TRAJECTORY_SERVER::target_reached(const geometry_msgs::Point& point){
+    bool position_reached = sqrt(pow(point.x - local_pose.pose.position.x,2)+pow(point.y - local_pose.pose.position.y,2)
+    +pow(point.z - local_pose.pose.position.z,2)) < 0.5;
     bool twist_reached = current_twist_norm < 0.5;
     return position_reached && twist_reached;
+}
+
+bool AIRO_TRAJECTORY_SERVER::target_reached(const geometry_msgs::Point& point, const double& yaw_angle){
+    bool position_reached = sqrt(pow(point.x - local_pose.pose.position.x,2)+pow(point.y - local_pose.pose.position.y,2)
+    +pow(point.z - local_pose.pose.position.z,2)) < 0.5;
+    bool twist_reached = current_twist_norm < 0.5;
+    bool yaw_reached = abs(yaw_angle - q2yaw(local_pose.pose.orientation)) < 5 * M_PI / 180;
+    return position_reached && twist_reached && yaw_reached;
 }
 
 geometry_msgs::Quaternion AIRO_TRAJECTORY_SERVER::yaw2q(double yaw){
@@ -151,19 +243,35 @@ void AIRO_TRAJECTORY_SERVER::file_traj_init(const std::string& file_name, std::v
     }
 }
 
-geometry_msgs::Point AIRO_TRAJECTORY_SERVER::get_start_point(const std::vector<std::vector<double>>& traj){
-    geometry_msgs::Point start_point;
-    start_point.x = traj[0][0];
-    start_point.y = traj[0][1];
-    start_point.z = traj[0][2];
+geometry_msgs::Pose AIRO_TRAJECTORY_SERVER::get_start_pose(const std::vector<std::vector<double>>& traj){
+    geometry_msgs::Pose start_point;
+    double start_yaw;
+    if (traj[0].size() != 3){
+        start_yaw = traj[0][traj[0].size()-1];
+    }
+    else{
+        start_yaw = 0.0;
+    }
+    start_point.position.x = traj[0][0];
+    start_point.position.y = traj[0][1];
+    start_point.position.z = traj[0][2];
+    start_point.orientation = yaw2q(start_yaw);
     return start_point;
 }
 
-geometry_msgs::Point AIRO_TRAJECTORY_SERVER::get_end_point(const std::vector<std::vector<double>>& traj){
-    geometry_msgs::Point end_point;
-    end_point.x = traj[traj.size()-1][0];
-    end_point.y = traj[traj.size()-1][1];
-    end_point.z = traj[traj.size()-1][2];
+geometry_msgs::Pose AIRO_TRAJECTORY_SERVER::get_end_pose(const std::vector<std::vector<double>>& traj){
+    geometry_msgs::Pose end_point;
+    double end_yaw;
+    if (traj[0].size() != 3){
+        end_yaw = traj[traj.size()-1][traj[traj.size()-1].size()-1];
+    }
+    else{
+        end_yaw = 0.0;
+    }
+    end_point.position.x = traj[traj.size()-1][0];
+    end_point.position.y = traj[traj.size()-1][1];
+    end_point.position.z = traj[traj.size()-1][2];
+    end_point.orientation = yaw2q(end_yaw);
     return end_point;
 }
 
@@ -310,8 +418,6 @@ bool AIRO_TRAJECTORY_SERVER::file_cmd(const std::vector<std::vector<double>>& tr
         }
         command_pub.publish(reference);
     }
-
-
 
     if (!path_ended){
         ROS_INFO_STREAM_THROTTLE(2.0,"[AIRo Trajectory] Publishing file trajectory.");
@@ -464,7 +570,11 @@ void AIRO_TRAJECTORY_SERVER::update_log(const airo_message::Reference& ref){
         line_to_push.push_back(target_euler.z()); // psi ref
         line_to_push.push_back(local_euler.z()); // psi
         line_to_push.push_back(attitude_target.thrust); // thrust
-
+        if (PUB_DEBUG){
+            for (size_t i = 0; i < debug_msg.size();i++){
+                line_to_push.push_back(debug_msg[i]);
+            }
+        }
         log_data.push_back(line_to_push);
         log_counter = 1;
     }
@@ -476,6 +586,26 @@ void AIRO_TRAJECTORY_SERVER::update_log(const airo_message::Reference& ref){
 int AIRO_TRAJECTORY_SERVER::save_result(){
     // Define column headers
     std::vector<std::string> column_headers = {"time","ref_x","x","ref_y","y","ref_z","z","ref_u","u","ref_v","v","ref_w","w","ref_phi","phi","ref_theta","theta","ref_psi","psi","thrust"};
+    if (PUB_DEBUG){
+        std::vector<std::string> debug_header;
+        if (CONTROLLER_TYPE == "mpc"){
+            debug_header = {"acados_status","kkt_res","cpu_time"};
+            for (int i = 1; i <= preview_size; i++){
+                std::string dummy_string = "yaw_predictin_" + std::to_string(i);
+                debug_header.push_back(dummy_string);
+            }
+        }
+        else if (CONTROLLER_TYPE == "backstepping"){
+            debug_header = {"e_z1","e_z2","e_x1","e_x2","u_x","e_y1","e_y2","u_y"};
+        }
+        else if (CONTROLLER_TYPE == "slidingmode"){
+            debug_header = {"e_z","e_dz","s_z","e_x","e_dx","s_x","u_x","e_y","e_dy","s_y","u_y"};
+        }
+        
+        for (const std::string& element : debug_header){
+            column_headers.push_back(element);
+        }
+    }
 
     // Get the current time
     std::time_t now = std::time(nullptr);

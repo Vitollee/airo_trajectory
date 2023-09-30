@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<launch>
+
+    <arg name="traj_name" default="circle"/>
+    <!-- <arg name="traj_name" default="lemniscate"/> -->
+    <!-- <arg name="traj_name" default="points"/> -->
+    <!-- <arg name="traj_name" default="polynomial"/> -->
+    
+
+	<node pkg="airo_trajectory" type="position_setpoint_node" name="position_setpoint_node" output="screen">
+        <param name="/pose_topic" value="/mavros/local_position/pose" />
+        <param name="/traj_name" value="$(arg traj_name)"/>
+        <param name="/result_save" value="true"/>
+    </node>
+
+</launch>

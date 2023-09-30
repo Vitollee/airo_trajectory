@@ -36,8 +36,8 @@ int main(int argc, char **argv)
             }
 
             case INIT:{
-                airo_trajectory_server.pose_cmd(airo_trajectory_server.get_start_point(trajectory_data));
-                if(airo_trajectory_server.target_reached(airo_trajectory_server.get_start_point(trajectory_data))){
+                airo_trajectory_server.pose_cmd(airo_trajectory_server.get_start_pose(trajectory_data));
+                if(airo_trajectory_server.target_reached(airo_trajectory_server.get_start_pose(trajectory_data))){
                     state = FILE_TRAJ;
                     row_to_read = 0;
                 }
@@ -45,9 +45,8 @@ int main(int argc, char **argv)
             }
 
             case FILE_TRAJ:{
-
                 if(airo_trajectory_server.file_cmd(trajectory_data, row_to_read) && // Reached end of file
-                airo_trajectory_server.target_reached(airo_trajectory_server.get_end_point(trajectory_data))){
+                airo_trajectory_server.target_reached(airo_trajectory_server.get_end_pose(trajectory_data))){
                     state = LAND;
                 }
                 break;

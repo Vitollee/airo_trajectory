@@ -52,7 +52,7 @@ int main(int argc, char **argv)
 
             case POSE_YAW:{
                 airo_trajectory_server.pose_cmd(target_points[i],target_yaw[i]);
-                if(airo_trajectory_server.target_reached(target_points[i])){
+                if(airo_trajectory_server.target_reached(target_points[i],target_yaw[i])){
                     i += 1;
                     if(i == target_yaw.size()){
                         state = POSE_TWIST;
@@ -63,7 +63,7 @@ int main(int argc, char **argv)
 
             case POSE_TWIST:{
                 airo_trajectory_server.pose_cmd(target_points[0],target_twist);
-                if(airo_trajectory_server.target_reached(target_points[0])){
+                if(airo_trajectory_server.target_reached(target_points[0],0.0)){
                     state = LAND;
                 }
                 break;
