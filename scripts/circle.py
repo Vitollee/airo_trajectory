@@ -14,8 +14,8 @@ output_path = package_path + '/scripts/circle.txt'
 sample_time = 1/frequency      # seconds
 duration = 20                  # seconds
 
-r = 5                          # m
-v = 4                          # m/s
+r = 3                          # m
+v = 2                          # m/s
 
 # Circle Center
 x0 = 0.5                

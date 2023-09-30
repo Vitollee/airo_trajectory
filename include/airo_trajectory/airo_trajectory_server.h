@@ -27,21 +27,21 @@ class AIRO_TRAJECTORY_SERVER{
 
     // Parameters
     std::string POSE_TOPIC, TWIST_TOPIC, CONTROLLER_TYPE;
-    bool RESULT_SAVE = false,RESULT_PLOT = false;
+    bool RESULT_SAVE = false,RESULT_PLOT = false, PUB_DEBUG = false;
     int FSM_FREQUENCY;
 
-    ros::Subscriber local_pose_sub, local_twist_sub, fsm_info_sub, attitude_target_sub, yaw_prediction_sub;
+    ros::Subscriber local_pose_sub, local_twist_sub, fsm_info_sub, attitude_target_sub, mpc_debug_sub, backstepping_debug_sub, slidingmode_debug_sub;
     ros::Publisher command_pub, command_preview_pub, takeoff_land_pub;
     airo_message::FSMInfo fsm_info;
     geometry_msgs::PoseStamped local_pose;
     geometry_msgs::TwistStamped local_twist;
     mavros_msgs::AttitudeTarget attitude_target;
-    std::vector<double> yaw_prediction;
     double current_twist_norm;
     std::vector<std::vector<double>> log_data; // t,ref_x,x,ref_y,y,ref_z,z,ref_u,u,ref_v,v,ref_w,w,ref_phi,phi,ref_theta,theta,ref_psi,psi,thrust
     int log_counter,log_interval = 5;
+    std::vector<double> debug_msg;
 
-    // Only for MPC
+    // For MPC
     bool mpc_enable_preview = false, use_preview = false;
     const int preview_size = 21;
     const int row_interval = 5; // trajectory file at 100hz, mpc prediction at 20hz, so publish traj every 5 rows
@@ -53,7 +53,9 @@ class AIRO_TRAJECTORY_SERVER{
     void twist_cb(const geometry_msgs::TwistStamped::ConstPtr&);
     void fsm_info_cb(const airo_message::FSMInfo::ConstPtr&);
     void attitude_target_cb(const mavros_msgs::AttitudeTarget::ConstPtr&);
-    void yaw_prediction_cb(const std_msgs::Float64MultiArray::ConstPtr&);
+    void mpc_debug_cb(const std_msgs::Float64MultiArray::ConstPtr&);
+    void backstepping_debug_cb(const std_msgs::Float64MultiArray::ConstPtr&);
+    void slidingmode_debug_cb(const std_msgs::Float64MultiArray::ConstPtr&);
     void pose_cmd(const geometry_msgs::Pose&);
     void pose_cmd(const geometry_msgs::Pose&, const geometry_msgs::Twist&);
     void pose_cmd(const geometry_msgs::Pose&, const geometry_msgs::Twist&, const geometry_msgs::Accel&);

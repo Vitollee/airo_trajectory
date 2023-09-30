@@ -5,12 +5,11 @@ AIRO_TRAJECTORY_SERVER::AIRO_TRAJECTORY_SERVER(ros::NodeHandle& nh){
     nh.getParam("airo_control_node/fsm/twist_topic",TWIST_TOPIC);
     nh.getParam("airo_control_node/fsm/controller_type",CONTROLLER_TYPE);
     nh.getParam("/file_trajectory_node/result_save",RESULT_SAVE);
-    nh.getParam("/airo_control_node/fsm/fsm_frequency",FSM_FREQUENCY);
+    nh.getParam("airo_control_node/fsm/fsm_frequency",FSM_FREQUENCY);
     local_pose_sub = nh.subscribe<geometry_msgs::PoseStamped>(POSE_TOPIC,5,&AIRO_TRAJECTORY_SERVER::pose_cb,this);
     local_twist_sub = nh.subscribe<geometry_msgs::TwistStamped>(TWIST_TOPIC,5,&AIRO_TRAJECTORY_SERVER::twist_cb,this);
     fsm_info_sub = nh.subscribe<airo_message::FSMInfo>("/airo_control/fsm_info",1,&AIRO_TRAJECTORY_SERVER::fsm_info_cb,this);
     attitude_target_sub = nh.subscribe<mavros_msgs::AttitudeTarget>("/mavros/setpoint_raw/attitude",5,&AIRO_TRAJECTORY_SERVER::attitude_target_cb,this);
-    yaw_prediction_sub = nh.subscribe<std_msgs::Float64MultiArray>("/airo_control/mpc/yaw_prediction",5,&AIRO_TRAJECTORY_SERVER::yaw_prediction_cb,this);
     command_pub = nh.advertise<airo_message::Reference>("/airo_control/setpoint",1);
     command_preview_pub = nh.advertise<airo_message::ReferencePreview>("/airo_control/setpoint_preview",1);
     takeoff_land_pub = nh.advertise<airo_message::TakeoffLandTrigger>("/airo_control/takeoff_land_trigger",1);
@@ -19,8 +18,29 @@ AIRO_TRAJECTORY_SERVER::AIRO_TRAJECTORY_SERVER(ros::NodeHandle& nh){
         if (mpc_enable_preview){
             use_preview = true;
         }
+        nh.getParam("airo_control_node/mpc/pub_debug",PUB_DEBUG);
+        if (PUB_DEBUG){
+            mpc_debug_sub = nh.subscribe<std_msgs::Float64MultiArray>("/airo_control/mpc/debug",1,&AIRO_TRAJECTORY_SERVER::mpc_debug_cb,this);
+            debug_msg.resize(preview_size+3);
+        }
     }
-    yaw_prediction.resize(21);
+    else if (CONTROLLER_TYPE == "backstepping"){
+        nh.getParam("airo_control_node/backstepping/pub_debug",PUB_DEBUG);
+        if (PUB_DEBUG){
+            backstepping_debug_sub = nh.subscribe<std_msgs::Float64MultiArray>("/airo_control/backstepping/debug",1,&AIRO_TRAJECTORY_SERVER::backstepping_debug_cb,this);
+            debug_msg.resize(8);
+        }
+    }
+    else if (CONTROLLER_TYPE == "slidingmode"){
+        nh.getParam("airo_control_node/slidingmode/pub_debug",PUB_DEBUG);
+        if (PUB_DEBUG){
+            slidingmode_debug_sub = nh.subscribe<std_msgs::Float64MultiArray>("/airo_control/slidingmode/debug",1,&AIRO_TRAJECTORY_SERVER::slidingmode_debug_cb,this);
+            debug_msg.resize(11);
+        }
+    }
+    else{
+        ROS_ERROR("[AIRo Trajectory] Controller type not supported!");
+    }
 }
 
 void AIRO_TRAJECTORY_SERVER::pose_cb(const geometry_msgs::PoseStamped::ConstPtr& msg){
@@ -46,9 +66,26 @@ void AIRO_TRAJECTORY_SERVER::attitude_target_cb(const mavros_msgs::AttitudeTarge
     attitude_target.thrust = msg->thrust;
 }
 
-void AIRO_TRAJECTORY_SERVER::yaw_prediction_cb(const std_msgs::Float64MultiArray::ConstPtr& msg){
-    for (size_t i = 0; i < yaw_prediction.size();i++){
-        yaw_prediction[i] = msg->data[i];
+void AIRO_TRAJECTORY_SERVER::mpc_debug_cb(const std_msgs::Float64MultiArray::ConstPtr& msg){
+    if (CONTROLLER_TYPE == "mpc"){
+        for (size_t i = 0; i < debug_msg.size();i++){
+            debug_msg[i] = msg->data[i];
+        }
+    }
+}
+
+void AIRO_TRAJECTORY_SERVER::backstepping_debug_cb(const std_msgs::Float64MultiArray::ConstPtr& msg){
+    if (CONTROLLER_TYPE == "backstepping"){
+        for (size_t i = 0; i < debug_msg.size();i++){
+            debug_msg[i] = msg->data[i];
+        }
+    }
+}
+void AIRO_TRAJECTORY_SERVER::slidingmode_debug_cb(const std_msgs::Float64MultiArray::ConstPtr& msg){
+    if (CONTROLLER_TYPE == "slidingmode"){
+        for (size_t i = 0; i < debug_msg.size();i++){
+            debug_msg[i] = msg->data[i];
+        }
     }
 }
 
@@ -370,8 +407,6 @@ bool AIRO_TRAJECTORY_SERVER::file_cmd(const std::vector<std::vector<double>>& tr
         command_pub.publish(reference);
     }
 
-
-
     if (!path_ended){
         ROS_INFO_STREAM_THROTTLE(2.0,"[AIRo Trajectory] Publishing file trajectory.");
     }
@@ -523,8 +558,10 @@ void AIRO_TRAJECTORY_SERVER::update_log(const airo_message::Reference& ref){
         line_to_push.push_back(target_euler.z()); // psi ref
         line_to_push.push_back(local_euler.z()); // psi
         line_to_push.push_back(attitude_target.thrust); // thrust
-        for (size_t i = 0; i < yaw_prediction.size();i++){
-            line_to_push.push_back(yaw_prediction[i]);
+        if (PUB_DEBUG){
+            for (size_t i = 0; i < debug_msg.size();i++){
+                line_to_push.push_back(debug_msg[i]);
+            }
         }
         log_data.push_back(line_to_push);
         log_counter = 1;
@@ -537,6 +574,26 @@ void AIRO_TRAJECTORY_SERVER::update_log(const airo_message::Reference& ref){
 int AIRO_TRAJECTORY_SERVER::save_result(){
     // Define column headers
     std::vector<std::string> column_headers = {"time","ref_x","x","ref_y","y","ref_z","z","ref_u","u","ref_v","v","ref_w","w","ref_phi","phi","ref_theta","theta","ref_psi","psi","thrust"};
+    if (PUB_DEBUG){
+        std::vector<std::string> debug_header;
+        if (CONTROLLER_TYPE == "mpc"){
+            debug_header = {"acados_status","kkt_res","cpu_time"};
+            for (int i = 1; i <= preview_size; i++){
+                std::string dummy_string = "yaw_predictin_" + std::to_string(i);
+                debug_header.push_back(dummy_string);
+            }
+        }
+        else if (CONTROLLER_TYPE == "backstepping"){
+            debug_header = {"e_z1","e_z2","e_x1","e_x2","u_x","e_y1","e_y2","u_y"};
+        }
+        else if (CONTROLLER_TYPE == "slidingmode"){
+            debug_header = {"e_z","e_dz","s_z","e_x","e_dx","s_x","u_x","e_y","e_dy","s_y","u_y"};
+        }
+        
+        for (const std::string& element : debug_header){
+            column_headers.push_back(element);
+        }
+    }
 
     // Get the current time
     std::time_t now = std::time(nullptr);
