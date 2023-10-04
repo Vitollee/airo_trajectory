@@ -4,7 +4,7 @@ A trajectory publish server for quadrotor applications. This package is dependen
 
 ## Installation
 
-It is recommanded to run the package in our docker following instructions [here](https://github.com/HKPolyU-UAV/docker_practice). By doing so, you can skip the following steps.
+It is recommanded to run the package in our docker following instructions [here](https://github.com/HKPolyU-UAV/airo_docker_lib). By doing so, you can skip the following steps.
 
 Create a catkin workspace and clone this repository to src folder (ex. ~/airo_trajectory_ws/src)
 ```
