@@ -41,18 +41,6 @@ AIRO_TRAJECTORY_SERVER::AIRO_TRAJECTORY_SERVER(ros::NodeHandle& nh){
     else{
         ROS_ERROR("[AIRo Trajectory] Controller type not supported!");
     }
-    else if (CONTROLLER_TYPE == "hmpc"){
-        nh.getParam("airo_control_node/hmpc/enable_preview",mpc_enable_preview);
-        if (mpc_enable_preview){
-            use_preview = true;
-        }
-    }
-    else if (CONTROLLER_TYPE == "hmpc_reduced"){
-        nh.getParam("airo_control_node/hmpc_reduced/enable_preview",mpc_enable_preview);
-        if (mpc_enable_preview){
-            use_preview = true;
-        }
-    }
 }
 
 void AIRO_TRAJECTORY_SERVER::pose_cb(const geometry_msgs::PoseStamped::ConstPtr& msg){
