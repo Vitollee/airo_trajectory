@@ -93,6 +93,7 @@ void AIRO_TRAJECTORY_SERVER::backstepping_debug_cb(const std_msgs::Float64MultiA
         }
     }
 }
+
 void AIRO_TRAJECTORY_SERVER::slidingmode_debug_cb(const std_msgs::Float64MultiArray::ConstPtr& msg){
     if (CONTROLLER_TYPE == "slidingmode"){
         for (size_t i = 0; i < debug_msg.size();i++){
